@@ -2,6 +2,11 @@
 
 A simple Python server that serves random photos from Unsplash based on themes, with built-in caching to optimize API usage.
 
+I needed to get random pictures for a project and couldn't find a simple working endpoint. So here it is.
+
+![volcano+lava+iceland (1)](https://github.com/user-attachments/assets/fc60a5d6-206e-4a2c-bcd2-b31afe2837e0)
+
+
 ## Important: Unsplash API Required
 
 This server **exclusively** works with the Unsplash API. To use this application, you must:

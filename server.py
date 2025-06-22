@@ -11,9 +11,10 @@ app = Flask(__name__)
 
 UNSPLASH_ACCESS_KEY = os.getenv('UNSPLASH_ACCESS_KEY')
 UNSPLASH_SECRET_KEY = os.getenv('UNSPLASH_SECRET_KEY')
-CACHE_DURATION_SECONDS = max(600, int(os.getenv('CACHE_DURATION_SECONDS', 600)))
+CACHE_DURATION_SECONDS = max(90, int(os.getenv('CACHE_DURATION_SECONDS', 90)))
 
-photo_cache = {}
+photo_cache = None
+cache_timestamp = 0
 cache_lock = Lock()
 
 def get_photo_from_unsplash(theme):
@@ -44,30 +45,30 @@ def get_photo_from_unsplash(theme):
 
 @app.route('/random/<theme>')
 def get_random_photo(theme):
-    """Endpoint to get a random photo based on theme with caching"""
+    """Endpoint to get a random photo based on theme with global caching"""
+    global photo_cache, cache_timestamp
     current_time = time.time()
     
     with cache_lock:
-        if theme in photo_cache:
-            cached_photo = photo_cache[theme]
-            age = current_time - cached_photo['timestamp']
+        if photo_cache is not None:
+            age = current_time - cache_timestamp
             
             if age < CACHE_DURATION_SECONDS:
-                print(f"Cache hit for theme '{theme}' (age: {age:.1f}s)")
-                return Response(cached_photo['data'], mimetype=cached_photo['content_type'])
+                print(f"Cache hit (age: {age:.1f}s, requested theme: '{theme}')")
+                return Response(photo_cache['data'], mimetype=photo_cache['content_type'])
             else:
-                print(f"Cache expired for theme '{theme}' (age: {age:.1f}s)")
+                print(f"Cache expired (age: {age:.1f}s)")
     
     print(f"Fetching new photo for theme '{theme}'")
     photo_data, content_type = get_photo_from_unsplash(theme)
     
     if photo_data:
         with cache_lock:
-            photo_cache[theme] = {
+            photo_cache = {
                 'data': photo_data,
-                'content_type': content_type,
-                'timestamp': current_time
+                'content_type': content_type
             }
+            cache_timestamp = current_time
         return Response(photo_data, mimetype=content_type)
     else:
         return jsonify({"error": "Failed to fetch photo"}), 500

@@ -101,7 +101,7 @@ python server.py
 
 The server will start on `http://localhost:5000`
 
-Note: `CACHE_DURATION_SECONDS` has a minimum value of 600 seconds (10 minutes) to respect API rate limits.
+Note: `CACHE_DURATION_SECONDS` has a minimum value of 90 seconds to respect API rate limits.
 
 ### Building from Source with Docker
 
@@ -121,15 +121,17 @@ docker run -p 5000:5000 -v $(pwd)/.env:/app/.env:ro randsplash
 |---------------------|-------------|---------|---------|
 | `UNSPLASH_ACCESS_KEY` | Your Unsplash API access key | Required | - |
 | `UNSPLASH_SECRET_KEY` | Your Unsplash API secret key | Required | - |
-| `CACHE_DURATION_SECONDS` | How long to cache photos (in seconds) | 600 | 600 |
+| `CACHE_DURATION_SECONDS` | How long to cache photos (in seconds) | 90 | 90 |
 
 ## How It Works
 
-1. When a request is made to `/random/<theme>`, the server checks its cache
-2. If a cached photo exists for that theme and is less than `CACHE_DURATION_SECONDS` old, it's returned immediately
-3. Otherwise, a new photo is fetched from Unsplash API
-4. The new photo is cached and served to the client
+1. When a request is made to `/random/<theme>`, the server checks its global cache
+2. If a cached photo exists (regardless of theme) and is less than `CACHE_DURATION_SECONDS` old, it's returned immediately
+3. Otherwise, a new photo is fetched from Unsplash API based on the requested theme
+4. The new photo is cached globally and served to the client
 5. Full resolution images are served for the best quality
+
+**Important:** The cache is global, not per-theme. This means any request will return the same cached image regardless of the theme parameter, until the cache expires. This design ensures the server stays well within Unsplash's rate limit of 50 requests per hour.
 
 ## Example Usage
 
@@ -146,7 +148,7 @@ curl http://localhost:5000/health
 
 ## Rate Limiting
 
-The caching mechanism helps prevent hitting Unsplash API rate limits by serving cached photos when available. The minimum cache duration of 600 seconds ensures responsible API usage.
+The global caching mechanism helps prevent hitting Unsplash API rate limits by serving the same cached photo for all requests until it expires. With a minimum cache duration of 90 seconds, the server can handle up to 40 requests per hour to the Unsplash API, staying well within the 50 requests/hour limit.
 
 ## License
 
